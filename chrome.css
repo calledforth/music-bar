@@ -1,0 +1,69 @@
+:root {
+  --music-bar-accent: #7c5cff;
+  --music-bar-accent-dim: color-mix(in srgb, var(--music-bar-accent) 35%, transparent);
+  --music-bar-accent-glow: color-mix(in srgb, var(--music-bar-accent) 60%, transparent);
+  --music-bar-bg: color-mix(in srgb, #0b0c0f 85%, var(--music-bar-accent) 15%);
+  --music-bar-border: color-mix(in srgb, #ffffff 5%, var(--music-bar-accent) 25%);
+}
+
+#zen-media-controls-toolbar {
+  margin: 8px 10px 12px;
+}
+
+#zen-media-controls-toolbar > toolbaritem {
+  position: relative;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: var(--music-bar-bg);
+  border: 1px solid var(--music-bar-border);
+  box-shadow: 0 0 18px var(--music-bar-accent-glow), inset 0 0 0 1px #00000055;
+  overflow: hidden;
+}
+
+#zen-media-controls-toolbar > toolbaritem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--music-bar-accent) 35%, transparent),
+    transparent 60%
+  );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+#zen-media-controls-toolbar > toolbaritem::after {
+  content: "";
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(
+    circle at 20% 0%,
+    var(--music-bar-accent-glow),
+    transparent 55%
+  );
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+#zen-media-controls-toolbar toolbarbutton {
+  color: color-mix(in srgb, #ffffff 70%, var(--music-bar-accent) 30%);
+  border-radius: 8px;
+  padding: 4px;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+#zen-media-controls-toolbar toolbarbutton:hover {
+  background-color: color-mix(in srgb, var(--music-bar-accent) 22%, transparent);
+  box-shadow: 0 0 10px var(--music-bar-accent-dim);
+}
+
+#zen-media-controls-toolbar toolbarbutton[disabled] {
+  opacity: 0.5;
+}
+
+#zen-media-controls-toolbar label,
+#zen-media-controls-toolbar description {
+  color: color-mix(in srgb, #ffffff 75%, var(--music-bar-accent) 25%);
+}
