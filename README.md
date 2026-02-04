@@ -1,11 +1,14 @@
 # Music Bar Accent (Zen + Sine)
 
-This mod styles the Zen media controls bar and updates its accent glow based on the current track's album art.
+This mod styles the Zen media controls bar and uses album art as a blurred background,
+with a dynamic accent glow where possible.
 
 ## What it does
 
 - Styles `#zen-media-controls-toolbar` with a dark glassy background and glow.
-- Uses a userChrome script to read MediaSession metadata and sample album art color.
+- Uses a userChrome script to read MediaSession metadata artwork.
+- Sets the cover art as a blurred background with dark edges.
+- Samples album art color when possible for the accent glow.
 - Updates CSS variables so the bar responds dynamically to music.
 
 ## Install with Sine

@@ -19,6 +19,8 @@
   const VAR_ACCENT = "--music-bar-accent";
   const VAR_ACCENT_DIM = "--music-bar-accent-dim";
   const VAR_ACCENT_GLOW = "--music-bar-accent-glow";
+  const VAR_COVER = "--music-bar-cover-url";
+  const VAR_COVER_OPACITY = "--music-bar-cover-opacity";
   const ACTIVE_ATTR = "music-bar-accent-active";
 
   const DEFAULT_COLOR = { r: 124, g: 92, b: 255 };
@@ -113,6 +115,16 @@
     ROOT.removeAttribute(ACTIVE_ATTR);
   };
 
+  const applyCover = (url) => {
+    if (!url) {
+      ROOT.style.removeProperty(VAR_COVER);
+      ROOT.style.setProperty(VAR_COVER_OPACITY, "0");
+      return;
+    }
+    ROOT.style.setProperty(VAR_COVER, `url("${url}")`);
+    ROOT.style.setProperty(VAR_COVER_OPACITY, "1");
+  };
+
   const normalizeAccent = ({ r, g, b }) => {
     const { h, s, l } = rgbToHsl(r, g, b);
     const nextS = clamp(s, 0.4, 0.95);
@@ -182,13 +194,15 @@
   const updateFromMetadata = async (metadata) => {
     const artworkUrl = pickArtworkUrl(metadata?.artwork);
     if (!artworkUrl) {
-      clearAccent();
+      applyCover(null);
+      applyAccent(DEFAULT_COLOR);
       state.lastArtworkUrl = null;
       return;
     }
     if (artworkUrl === state.lastArtworkUrl) return;
 
     state.lastArtworkUrl = artworkUrl;
+    applyCover(artworkUrl);
     const sampled = await colorFromImage(artworkUrl);
     const color = sampled ? normalizeAccent(sampled) : DEFAULT_COLOR;
     applyAccent(color);
@@ -247,6 +261,7 @@
         gZenMediaController.setupMediaController = state.originalSetup;
       }
       state.originalSetup = null;
+      applyCover(null);
       clearAccent();
       delete window.MusicBarAccent;
     }
