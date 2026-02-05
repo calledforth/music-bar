@@ -1,13 +1,17 @@
 // ==UserScript==
 // @name MusicBarAccent.uc.js
 // @description Dynamic accent color for Zen media controls
-// @version 0.3.0
+// @version 0.3.1
 // @include main
 // @grant none
 // ==/UserScript==
 
 (() => {
   "use strict";
+
+  const DEBUG = true;
+  const log = (...args) => DEBUG && console.log("[MusicBar]", ...args);
+  const warn = (...args) => DEBUG && console.warn("[MusicBar]", ...args);
 
   if (window.MusicBarAccent?.destroy) {
     try {
@@ -181,11 +185,16 @@
 
   const getDomArtworkUrl = (browser) => {
     try {
+      log("getDomArtworkUrl called, browser:", browser);
       const doc = browser?.contentDocument || browser?.contentWindow?.document;
+      log("Got document:", !!doc);
       if (!doc) return null;
+      
       const host = doc.location?.host || "";
+      log("Document host:", host);
 
       if (host.includes("music.youtube.com")) {
+        log("Detected YouTube Music");
         const ytMusicSelectors = [
           "ytmusic-player-bar img#song-image",
           "ytmusic-player-bar .image",
@@ -193,12 +202,13 @@
           "#player-bar img",
           "img#song-image"
         ];
-        return (
-          getImageFromSelectors(doc, ytMusicSelectors) || getMetaImageUrl(doc)
-        );
+        const result = getImageFromSelectors(doc, ytMusicSelectors) || getMetaImageUrl(doc);
+        log("YT Music result:", result);
+        return result;
       }
 
       if (host.includes("open.spotify.com")) {
+        log("Detected Spotify");
         const spotifySelectors = [
           '[data-testid="now-playing-widget"] img',
           'img[data-testid="cover-art-image"]',
@@ -206,23 +216,31 @@
           'footer img[src*="i.scdn.co/image/"]',
           'img[src*="i.scdn.co/image/"]'
         ];
-        return (
-          getImageFromSelectors(doc, spotifySelectors) || getMetaImageUrl(doc)
-        );
+        const result = getImageFromSelectors(doc, spotifySelectors) || getMetaImageUrl(doc);
+        log("Spotify result:", result);
+        return result;
       }
 
       if (host.includes("youtube.com")) {
-        return getMetaImageUrl(doc);
+        log("Detected YouTube");
+        const result = getMetaImageUrl(doc);
+        log("YouTube result:", result);
+        return result;
       }
 
+      log("Unknown site, trying meta image");
       return getMetaImageUrl(doc);
-    } catch {
+    } catch (e) {
+      warn("getDomArtworkUrl error:", e);
       return null;
     }
   };
 
   const getMetadataArtworkUrl = (controller) => {
-    const artwork = controller?.getMetadata?.()?.artwork;
+    const metadata = controller?.getMetadata?.();
+    log("Metadata from controller:", metadata);
+    const artwork = metadata?.artwork;
+    log("Artwork array:", artwork);
     return pickArtworkUrl(artwork);
   };
 
@@ -294,31 +312,49 @@
 
   const refreshArtwork = async () => {
     const token = ++state.refreshToken;
+    log("refreshArtwork called, controller:", !!state.controller, "browser:", !!state.browser);
+    
     const metadataUrl = getMetadataArtworkUrl(state.controller);
+    log("metadataUrl:", metadataUrl);
+    
     const domUrl = metadataUrl ? null : getDomArtworkUrl(state.browser);
+    log("domUrl:", domUrl);
+    
     const artworkUrl = metadataUrl || domUrl;
+    log("Final artworkUrl:", artworkUrl);
 
     if (!artworkUrl) {
+      log("No artwork URL, using defaults");
       applyCover(null);
       applyAccent(DEFAULT_COLOR);
       state.lastArtworkUrl = null;
       return;
     }
-    if (artworkUrl === state.lastArtworkUrl) return;
+    if (artworkUrl === state.lastArtworkUrl) {
+      log("Same artwork URL, skipping");
+      return;
+    }
 
+    log("Applying new artwork:", artworkUrl);
     state.lastArtworkUrl = artworkUrl;
     applyCover(artworkUrl);
     const sampled = await colorFromImage(artworkUrl);
+    log("Sampled color:", sampled);
     if (token !== state.refreshToken) return;
     const color = sampled ? normalizeAccent(sampled) : DEFAULT_COLOR;
     applyAccent(color);
   };
 
   const attachToController = (controller, browser) => {
-    if (!controller || controller === state.controller) return;
+    log("attachToController called, controller:", controller, "browser:", browser);
+    if (!controller || controller === state.controller) {
+      log("Skipping attach - no controller or same controller");
+      return;
+    }
     detachController();
     state.controller = controller;
     state.browser = browser || null;
+    log("Controller attached, browser set:", !!state.browser);
     controller.addEventListener("metadatachange", updateFromEvent);
     controller.addEventListener("playbackstatechange", updateFromEvent);
     refreshArtwork();
@@ -341,16 +377,33 @@
   };
 
   const patchMediaController = () => {
-    if (!window.gZenMediaController?.setupMediaController || state.originalSetup) return;
+    log("patchMediaController called");
+    log("gZenMediaController exists:", !!window.gZenMediaController);
+    log("setupMediaController exists:", !!window.gZenMediaController?.setupMediaController);
+    
+    if (!window.gZenMediaController?.setupMediaController || state.originalSetup) {
+      warn("Cannot patch or already patched");
+      return;
+    }
+    
     state.originalSetup = gZenMediaController.setupMediaController.bind(gZenMediaController);
     gZenMediaController.setupMediaController = (controller, browser) => {
+      log("setupMediaController intercepted, controller:", controller, "browser:", browser);
       if (controller) {
         attachToController(controller, browser);
       }
       return state.originalSetup(controller, browser);
     };
+    
+    log("Patch applied, checking for existing controller...");
+    log("_currentMediaController:", gZenMediaController._currentMediaController);
+    log("_currentBrowser:", gZenMediaController._currentBrowser);
+    
     const current = gZenMediaController._currentMediaController;
-    if (current) attachToController(current, gZenMediaController._currentBrowser);
+    if (current) {
+      log("Found existing controller, attaching...");
+      attachToController(current, gZenMediaController._currentBrowser);
+    }
   };
 
   const startDomPolling = () => {
@@ -370,10 +423,13 @@
   };
 
   const waitForController = () => {
+    log("waitForController called, gZenMediaController:", !!window.gZenMediaController);
     if (window.gZenMediaController?.setupMediaController) {
+      log("gZenMediaController found, patching...");
       patchMediaController();
       return;
     }
+    log("gZenMediaController not ready, waiting...");
     if (window.requestIdleCallback) {
       requestIdleCallback(() => setTimeout(waitForController, 200));
     } else {
@@ -395,5 +451,6 @@
   };
 
   window.MusicBarAccent = api;
+  log("MusicBarAccent script starting...");
   waitForController();
 })();
