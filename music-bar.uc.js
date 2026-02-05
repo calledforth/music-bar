@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name MusicBarAccent.uc.js
 // @description Dynamic accent color for Zen media controls
-// @version 0.2.0
+// @version 0.3.0
 // @include main
 // @grant none
 // ==/UserScript==
@@ -28,10 +28,13 @@
 
   const state = {
     controller: null,
+    browser: null,
     lastArtworkUrl: null,
     canvas: null,
     ctx: null,
-    originalSetup: null
+    originalSetup: null,
+    domPollId: null,
+    refreshToken: 0
   };
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -125,6 +128,104 @@
     ROOT.style.setProperty(VAR_COVER_OPACITY, "1");
   };
 
+  const parseSrcset = (value) => {
+    if (!value) return null;
+    const parts = value
+      .split(",")
+      .map((entry) => entry.trim().split(" ")[0])
+      .filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : null;
+  };
+
+  const extractBackgroundUrl = (value) => {
+    if (!value || value === "none") return null;
+    const match = value.match(/url\(["']?(.*?)["']?\)/);
+    return match?.[1] || null;
+  };
+
+  const getElementImageUrl = (el) => {
+    if (!el) return null;
+    if (el.tagName === "IMG") {
+      return el.currentSrc || el.src || parseSrcset(el.getAttribute("srcset"));
+    }
+    const style = getComputedStyle(el);
+    return (
+      extractBackgroundUrl(style.backgroundImage) ||
+      extractBackgroundUrl(el.style?.backgroundImage)
+    );
+  };
+
+  const getMetaImageUrl = (doc) => {
+    const metaSelectors = [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      'meta[property="twitter:image"]',
+      'link[rel="image_src"]'
+    ];
+    for (const selector of metaSelectors) {
+      const node = doc.querySelector(selector);
+      const url = node?.content || node?.getAttribute?.("href");
+      if (url) return url;
+    }
+    return null;
+  };
+
+  const getImageFromSelectors = (doc, selectors) => {
+    for (const selector of selectors) {
+      const el = doc.querySelector(selector);
+      const url = getElementImageUrl(el);
+      if (url) return url;
+    }
+    return null;
+  };
+
+  const getDomArtworkUrl = (browser) => {
+    try {
+      const doc = browser?.contentDocument || browser?.contentWindow?.document;
+      if (!doc) return null;
+      const host = doc.location?.host || "";
+
+      if (host.includes("music.youtube.com")) {
+        const ytMusicSelectors = [
+          "ytmusic-player-bar img#song-image",
+          "ytmusic-player-bar .image",
+          "ytmusic-player-bar img",
+          "#player-bar img",
+          "img#song-image"
+        ];
+        return (
+          getImageFromSelectors(doc, ytMusicSelectors) || getMetaImageUrl(doc)
+        );
+      }
+
+      if (host.includes("open.spotify.com")) {
+        const spotifySelectors = [
+          '[data-testid="now-playing-widget"] img',
+          'img[data-testid="cover-art-image"]',
+          'img[data-testid="track-image"]',
+          'footer img[src*="i.scdn.co/image/"]',
+          'img[src*="i.scdn.co/image/"]'
+        ];
+        return (
+          getImageFromSelectors(doc, spotifySelectors) || getMetaImageUrl(doc)
+        );
+      }
+
+      if (host.includes("youtube.com")) {
+        return getMetaImageUrl(doc);
+      }
+
+      return getMetaImageUrl(doc);
+    } catch {
+      return null;
+    }
+  };
+
+  const getMetadataArtworkUrl = (controller) => {
+    const artwork = controller?.getMetadata?.()?.artwork;
+    return pickArtworkUrl(artwork);
+  };
+
   const normalizeAccent = ({ r, g, b }) => {
     const { h, s, l } = rgbToHsl(r, g, b);
     const nextS = clamp(s, 0.4, 0.95);
@@ -191,8 +292,12 @@
     }
   };
 
-  const updateFromMetadata = async (metadata) => {
-    const artworkUrl = pickArtworkUrl(metadata?.artwork);
+  const refreshArtwork = async () => {
+    const token = ++state.refreshToken;
+    const metadataUrl = getMetadataArtworkUrl(state.controller);
+    const domUrl = metadataUrl ? null : getDomArtworkUrl(state.browser);
+    const artworkUrl = metadataUrl || domUrl;
+
     if (!artworkUrl) {
       applyCover(null);
       applyAccent(DEFAULT_COLOR);
@@ -204,17 +309,20 @@
     state.lastArtworkUrl = artworkUrl;
     applyCover(artworkUrl);
     const sampled = await colorFromImage(artworkUrl);
+    if (token !== state.refreshToken) return;
     const color = sampled ? normalizeAccent(sampled) : DEFAULT_COLOR;
     applyAccent(color);
   };
 
-  const attachToController = (controller) => {
+  const attachToController = (controller, browser) => {
     if (!controller || controller === state.controller) return;
     detachController();
     state.controller = controller;
+    state.browser = browser || null;
     controller.addEventListener("metadatachange", updateFromEvent);
     controller.addEventListener("playbackstatechange", updateFromEvent);
-    updateFromMetadata(controller.getMetadata?.());
+    refreshArtwork();
+    startDomPolling();
   };
 
   const detachController = () => {
@@ -222,11 +330,14 @@
     state.controller.removeEventListener("metadatachange", updateFromEvent);
     state.controller.removeEventListener("playbackstatechange", updateFromEvent);
     state.controller = null;
+    state.browser = null;
+    stopDomPolling();
   };
 
   const updateFromEvent = (event) => {
-    const controller = event?.target || state.controller;
-    updateFromMetadata(controller?.getMetadata?.());
+    if (!event?.target || event.target === state.controller) {
+      refreshArtwork();
+    }
   };
 
   const patchMediaController = () => {
@@ -234,12 +345,28 @@
     state.originalSetup = gZenMediaController.setupMediaController.bind(gZenMediaController);
     gZenMediaController.setupMediaController = (controller, browser) => {
       if (controller) {
-        attachToController(controller);
+        attachToController(controller, browser);
       }
       return state.originalSetup(controller, browser);
     };
     const current = gZenMediaController._currentMediaController;
-    if (current) attachToController(current);
+    if (current) attachToController(current, gZenMediaController._currentBrowser);
+  };
+
+  const startDomPolling = () => {
+    stopDomPolling();
+    state.domPollId = setInterval(() => {
+      if (state.controller && state.browser) {
+        refreshArtwork();
+      }
+    }, 1600);
+  };
+
+  const stopDomPolling = () => {
+    if (state.domPollId) {
+      clearInterval(state.domPollId);
+      state.domPollId = null;
+    }
   };
 
   const waitForController = () => {

@@ -6,7 +6,7 @@ with a dynamic accent glow where possible.
 ## What it does
 
 - Styles `#zen-media-controls-toolbar` with a dark glassy background and glow.
-- Uses a userChrome script to read MediaSession metadata artwork.
+- Uses a userChrome script to read MediaSession artwork or DOM artwork.
 - Sets the cover art as a blurred background with dark edges.
 - Samples album art color when possible for the accent glow.
 - Updates CSS variables so the bar responds dynamically to music.
@@ -21,3 +21,4 @@ with a dynamic accent glow where possible.
 
 - Dynamic colors come from the `artwork` field in media metadata.
 - If no artwork is available, the bar falls back to the default accent in `chrome.css`.
+- Prioritized sites: YouTube Music, Spotify Web, YouTube.
