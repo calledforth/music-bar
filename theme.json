@@ -2,13 +2,13 @@
   "id": "music-bar-accent",
   "name": "Music Bar Accent",
   "description": "Dynamic accent glow for Zen media controls.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": "local",
   "style": {
     "chrome": "chrome.css"
   },
   "scripts": {
-    "music-bar.uc.js": {
+    "music-bar.uc.mjs": {
       "name": "Media color sync",
       "description": "Pulls album art colors and updates CSS vars.",
       "include": [

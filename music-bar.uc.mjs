@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name MusicBarAccent.uc.js
+// @name MusicBarAccent.uc.mjs
 // @description Dynamic accent color for Zen media controls
-// @version 0.3.1
+// @version 0.3.2
 // @include main
 // @grant none
 // ==/UserScript==
