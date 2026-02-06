@@ -1,16 +1,16 @@
 {
   "id": "music-bar-accent",
   "name": "Music Bar Accent",
-  "description": "Dynamic accent glow for Zen media controls.",
-  "version": "0.3.2",
+  "description": "Cover-first dynamic background for Zen media controls.",
+  "version": "0.5.0",
   "author": "local",
   "style": {
     "chrome": "chrome.css"
   },
   "scripts": {
     "music-bar.uc.mjs": {
-      "name": "Media color sync",
-      "description": "Pulls album art colors and updates CSS vars.",
+      "name": "Media cover sync",
+      "description": "Sets cover image CSS vars from media metadata/DOM.",
       "include": [
         "chrome://browser/content/browser.xhtml"
       ]

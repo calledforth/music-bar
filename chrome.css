@@ -1,78 +1,106 @@
+/* ── Music Bar Accent v0.5.0 ──
+ *  YouTube-Music-inspired ambient cover art glow.
+ *  The album art is heavily blurred and dimmed so the bar stays dark
+ *  while the cover colours tint the atmosphere.
+ */
+
 :root {
-  --music-bar-accent: #7c5cff;
-  --music-bar-accent-dim: color-mix(in srgb, var(--music-bar-accent) 35%, transparent);
-  --music-bar-accent-glow: color-mix(in srgb, var(--music-bar-accent) 60%, transparent);
-  --music-bar-bg: #0b0c0f;
-  --music-bar-border: color-mix(in srgb, #ffffff 6%, var(--music-bar-accent) 20%);
+  --music-bar-accent: #93a3b6;
+  --music-bar-accent-dim: color-mix(in srgb, var(--music-bar-accent) 18%, transparent);
+  --music-bar-bg: #09090c;
+  --music-bar-border: color-mix(in srgb, #ffffff 5%, var(--music-bar-accent) 8%);
   --music-bar-cover-url: none;
   --music-bar-cover-opacity: 0;
-  --music-bar-cover-blur: 18px;
-  --music-bar-cover-inset: 6px;
+  --music-bar-cover-blur: 32px;
 }
 
+/* When cover art is active, fade it in at low opacity */
+:root[music-bar-cover-active="true"] {
+  --music-bar-cover-opacity: 0.38;
+}
+
+/* ── Container ── */
 #zen-media-controls-toolbar > toolbaritem {
   position: relative;
   border-radius: 14px;
   background-color: var(--music-bar-bg);
-  box-shadow: 0 0 16px var(--music-bar-accent-dim), inset 0 0 0 1px var(--music-bar-border);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--music-bar-accent) 10%, transparent);
   overflow: hidden;
 }
 
+/* ── Cover art layer (heavily blurred, faint) ── */
 #zen-media-controls-toolbar > toolbaritem::before {
   content: "";
   position: absolute;
-  inset: var(--music-bar-cover-inset);
+  inset: -12px;                        /* bleed past edges to kill border artifacts */
   border-radius: inherit;
   background-image: var(--music-bar-cover-url);
   background-size: cover;
   background-position: center;
-  filter: blur(var(--music-bar-cover-blur)) saturate(1.2);
-  transform: scale(1.12);
+  filter: blur(var(--music-bar-cover-blur)) saturate(1.15) brightness(0.7);
+  transform: scale(1.25);
   opacity: var(--music-bar-cover-opacity);
-  transition: opacity 180ms ease;
+  transition: opacity 350ms ease;
   pointer-events: none;
 }
 
+/* ── Dark vignette overlay (YouTube-Music-style) ──
+ *  Multiple gradients layer darkness from all edges inward,
+ *  keeping only a soft colour glow near the centre-top.
+ */
 #zen-media-controls-toolbar > toolbaritem::after {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background:
-    radial-gradient(
-      circle at 25% 0%,
-      var(--music-bar-accent-dim),
-      transparent 55%
+    /* Left → right edge vignette */
+    linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.75) 0%,
+      transparent 35%,
+      transparent 65%,
+      rgba(0, 0, 0, 0.75) 100%
     ),
+    /* Top-to-bottom darkening */
     linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0.2),
-      rgba(0, 0, 0, 0.6)
+      rgba(0, 0, 0, 0.25) 0%,
+      rgba(0, 0, 0, 0.70) 100%
+    ),
+    /* Bottom edge hard fade */
+    linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.50) 0%,
+      transparent 40%
     );
-  opacity: 0.8;
   pointer-events: none;
 }
 
+/* ── Content above the layers ── */
 #zen-media-controls-toolbar > toolbaritem > * {
   position: relative;
   z-index: 1;
 }
 
+/* ── Controls ── */
 #zen-media-controls-toolbar toolbarbutton {
-  color: color-mix(in srgb, #ffffff 70%, var(--music-bar-accent) 30%);
+  color: color-mix(in srgb, #ffffff 82%, var(--music-bar-accent) 18%);
   border-radius: 8px;
   transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
 #zen-media-controls-toolbar toolbarbutton:hover {
-  background-color: color-mix(in srgb, var(--music-bar-accent) 22%, transparent);
-  box-shadow: 0 0 10px var(--music-bar-accent-dim);
+  background-color: color-mix(in srgb, var(--music-bar-accent) 16%, transparent);
+  box-shadow: 0 0 8px var(--music-bar-accent-dim);
 }
 
 #zen-media-controls-toolbar toolbarbutton[disabled] {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
+/* ── Text ── */
 #zen-media-controls-toolbar label,
 #zen-media-controls-toolbar description {
-  color: color-mix(in srgb, #ffffff 75%, var(--music-bar-accent) 25%);
+  color: color-mix(in srgb, #ffffff 85%, var(--music-bar-accent) 15%);
 }

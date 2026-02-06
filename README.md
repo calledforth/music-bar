@@ -1,24 +1,32 @@
 # Music Bar Accent (Zen + Sine)
 
-This mod styles the Zen media controls bar and uses album art as a blurred background,
-with a dynamic accent glow where possible.
+A Zen Browser mod that gives the media controls bar a YouTube-Music-inspired
+ambient glow using the currently-playing track's cover art.
 
 ## What it does
 
-- Styles `#zen-media-controls-toolbar` with a dark glassy background and glow.
-- Uses a userChrome script to read MediaSession artwork or DOM artwork.
-- Sets the cover art as a blurred background with dark edges.
-- Samples album art color when possible for the accent glow.
-- Updates CSS variables so the bar responds dynamically to music.
+- Styles `#zen-media-controls-toolbar` with a dark base and soft ambient glow.
+- Uses a userChrome script (`music-bar.uc.mjs`) to read MediaSession artwork,
+  with DOM fallback for YouTube Music, Spotify Web, and YouTube.
+- The cover art is heavily blurred and dimmed so it tints the bar rather than
+  flooding it — dark dominates, colour is atmospheric.
 
 ## Install with Sine
 
 1. Push this repo to GitHub.
 2. In Zen, open Sine settings and add this repo as a mod.
-3. Enable the mod and restart Zen.
+3. **Important:** In `about:config`, set `sine.allow-unsafe-js` to `true`
+   (required for non-store mods that include JavaScript).
+4. Restart Zen.
 
 ## Notes
 
-- Dynamic colors come from the `artwork` field in media metadata.
-- If no artwork is available, the bar falls back to the default accent in `chrome.css`.
+- If no artwork is available, the bar falls back to a neutral dark style.
 - Prioritized sites: YouTube Music, Spotify Web, YouTube.
+
+## Debugging
+
+- Open **Browser Console** (not page DevTools) and filter for `[MusicBar]`.
+- On load, you should see `boot marker v0.5.0`.
+- If you only see Sine stylesheet rebuild logs and no `[MusicBar]`, check that
+  `sine.allow-unsafe-js` is `true` in `about:config`.
