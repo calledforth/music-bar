@@ -27,6 +27,6 @@ ambient glow using the currently-playing track's cover art.
 ## Debugging
 
 - Open **Browser Console** (not page DevTools) and filter for `[MusicBar]`.
-- On load, you should see `boot marker v0.5.0`.
+- On load, you should see `boot v0.6.0`.
 - If you only see Sine stylesheet rebuild logs and no `[MusicBar]`, check that
   `sine.allow-unsafe-js` is `true` in `about:config`.

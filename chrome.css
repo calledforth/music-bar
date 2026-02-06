@@ -1,22 +1,22 @@
-/* ── Music Bar Accent v0.5.0 ──
- *  YouTube-Music-inspired ambient cover art glow.
- *  The album art is heavily blurred and dimmed so the bar stays dark
- *  while the cover colours tint the atmosphere.
+/* ── Music Bar Accent v0.6.0 ──
+ *  YouTube-Music-inspired ambient cover art glow with dynamic accent.
+ *  The album art is blurred and dimmed so the bar stays dark while
+ *  the cover colours tint the atmosphere. The script samples a dominant
+ *  colour from the artwork and writes --music-bar-accent in real time.
  */
 
 :root {
   --music-bar-accent: #93a3b6;
   --music-bar-accent-dim: color-mix(in srgb, var(--music-bar-accent) 18%, transparent);
   --music-bar-bg: #09090c;
-  --music-bar-border: color-mix(in srgb, #ffffff 5%, var(--music-bar-accent) 8%);
   --music-bar-cover-url: none;
   --music-bar-cover-opacity: 0;
-  --music-bar-cover-blur: 32px;
+  --music-bar-cover-blur: 26px;
 }
 
-/* When cover art is active, fade it in at low opacity */
+/* When cover art is active, fade it in */
 :root[music-bar-cover-active="true"] {
-  --music-bar-cover-opacity: 0.38;
+  --music-bar-cover-opacity: 0.44;
 }
 
 /* ── Container ── */
@@ -24,11 +24,12 @@
   position: relative;
   border-radius: 14px;
   background-color: var(--music-bar-bg);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--music-bar-accent) 10%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--music-bar-accent) 12%, transparent);
   overflow: hidden;
+  transition: box-shadow 600ms ease;
 }
 
-/* ── Cover art layer (heavily blurred, faint) ── */
+/* ── Cover art layer (blurred, dimmed) ── */
 #zen-media-controls-toolbar > toolbaritem::before {
   content: "";
   position: absolute;
@@ -37,7 +38,7 @@
   background-image: var(--music-bar-cover-url);
   background-size: cover;
   background-position: center;
-  filter: blur(var(--music-bar-cover-blur)) saturate(1.15) brightness(0.7);
+  filter: blur(var(--music-bar-cover-blur)) saturate(1.2) brightness(0.85);
   transform: scale(1.25);
   opacity: var(--music-bar-cover-opacity);
   transition: opacity 350ms ease;
@@ -57,21 +58,21 @@
     /* Left → right edge vignette */
     linear-gradient(
       to right,
-      rgba(0, 0, 0, 0.75) 0%,
+      rgba(0, 0, 0, 0.72) 0%,
       transparent 35%,
       transparent 65%,
-      rgba(0, 0, 0, 0.75) 100%
+      rgba(0, 0, 0, 0.72) 100%
     ),
     /* Top-to-bottom darkening */
     linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0.25) 0%,
-      rgba(0, 0, 0, 0.70) 100%
+      rgba(0, 0, 0, 0.20) 0%,
+      rgba(0, 0, 0, 0.65) 100%
     ),
     /* Bottom edge hard fade */
     linear-gradient(
       to top,
-      rgba(0, 0, 0, 0.50) 0%,
+      rgba(0, 0, 0, 0.45) 0%,
       transparent 40%
     );
   pointer-events: none;
@@ -85,14 +86,14 @@
 
 /* ── Controls ── */
 #zen-media-controls-toolbar toolbarbutton {
-  color: color-mix(in srgb, #ffffff 82%, var(--music-bar-accent) 18%);
+  color: color-mix(in srgb, #ffffff 72%, var(--music-bar-accent) 28%);
   border-radius: 8px;
-  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  transition: background-color 160ms ease, color 600ms ease, box-shadow 160ms ease;
 }
 
 #zen-media-controls-toolbar toolbarbutton:hover {
-  background-color: color-mix(in srgb, var(--music-bar-accent) 16%, transparent);
-  box-shadow: 0 0 8px var(--music-bar-accent-dim);
+  background-color: color-mix(in srgb, var(--music-bar-accent) 18%, transparent);
+  box-shadow: 0 0 10px var(--music-bar-accent-dim);
 }
 
 #zen-media-controls-toolbar toolbarbutton[disabled] {
@@ -102,5 +103,8 @@
 /* ── Text ── */
 #zen-media-controls-toolbar label,
 #zen-media-controls-toolbar description {
-  color: color-mix(in srgb, #ffffff 85%, var(--music-bar-accent) 15%);
+  color: color-mix(in srgb, #ffffff 78%, var(--music-bar-accent) 22%);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: color 600ms ease;
 }
